@@ -1755,6 +1755,7 @@ mta_relay(struct envelope *e, struct relayhost *relayh)
 	if ((r = SPLAY_FIND(mta_relay_tree, &relays, &key)) == NULL) {
 		r = xcalloc(1, sizeof *r);
 		TAILQ_INIT(&r->tasks);
+		r->dispatcher = dispatcher;
 		r->id = generate_uid();
 		r->tls = key.tls;
 		r->flags = key.flags;

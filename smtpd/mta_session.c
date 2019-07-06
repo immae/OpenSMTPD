@@ -162,6 +162,11 @@ void mta_hoststat_reschedule(const char *);
 void mta_hoststat_cache(const char *, uint64_t);
 void mta_hoststat_uncache(const char *, uint64_t);
 
+static void mta_filter_begin(struct mta_session *);
+static void mta_filter_end(struct mta_session *);
+static void mta_connected(struct mta_session *);
+static void mta_disconnected(struct mta_session *);
+
 static struct tree wait_helo;
 static struct tree wait_ptr;
 static struct tree wait_fd;
@@ -169,6 +174,12 @@ static struct tree wait_tls_init;
 static struct tree wait_tls_verify;
 
 static struct runq *hangon;
+
+#define	SESSION_FILTERED(s) \
+	((s)->relay->dispatcher->u.remote.filtername)
+
+#define	SESSION_DATA_FILTERED(s) \
+	((s)->relay->dispatcher->u.remote.filtername)
 
 static void
 mta_session_init(void)
@@ -347,6 +358,8 @@ mta_free(struct mta_session *s)
 
 	log_debug("debug: mta: %p: session done", s);
 
+	mta_disconnected(s);
+	
 	if (s->ready)
 		s->relay->nconn_ready -= 1;
 
@@ -1087,7 +1100,7 @@ mta_io(struct io *io, int evt, void *arg)
 	switch (evt) {
 
 	case IO_CONNECTED:
-		log_info("%016"PRIx64" mta connected", s->id);
+		mta_connected(s);
 
 		if (s->use_smtps) {
 			io_set_write(io);
@@ -1119,7 +1132,8 @@ mta_io(struct io *io, int evt, void *arg)
 		}
 
 		log_trace(TRACE_MTA, "mta: %p: <<< %s", s, line);
-
+		report_smtp_protocol_server("smtp-out", s->id,line);
+		
 		if ((error = parse_smtp_response(line, len, &msg, &cont))) {
 			mta_error(s, "Bad response: %s", error);
 			mta_free(s);
@@ -1298,7 +1312,8 @@ mta_send(struct mta_session *s, char *fmt, ...)
 	va_end(ap);
 
 	log_trace(TRACE_MTA, "mta: %p: >>> %s", s, p);
-
+	report_smtp_protocol_client("smtp-out", s->id, p);
+	
 	io_xprintf(s->io, "%s\r\n", p);
 
 	free(p);
@@ -1631,5 +1646,54 @@ mta_strstate(int state)
 	CASE(MTA_QUIT);
 	default:
 		return "MTA_???";
+	}
+}
+
+static void
+mta_filter_begin(struct mta_session *s)
+{
+	if (!SESSION_FILTERED(s))
+		return;
+
+	m_create(p_lka, IMSG_FILTER_SMTP_BEGIN, 0, 0, -1);
+	m_add_id(p_lka, s->id);
+	m_add_string(p_lka, s->relay->dispatcher->u.remote.filtername);
+	m_add_sockaddr(p_lka, (struct sockaddr *)&s->route->src->sa);
+	m_add_sockaddr(p_lka, (struct sockaddr *)&s->route->dst->sa);
+	/*m_add_string(p_lka, s->rdns);*/
+	m_add_string(p_lka, s->route->dst->ptrname);
+	m_add_int(p_lka, -1);
+	m_close(p_lka);
+}
+
+static void
+mta_filter_end(struct mta_session *s)
+{
+	if (!SESSION_FILTERED(s))
+		return;
+
+	m_create(p_lka, IMSG_FILTER_SMTP_END, 0, 0, -1);
+	m_add_id(p_lka, s->id);
+	m_close(p_lka);
+}
+
+static void
+mta_connected(struct mta_session *s)
+{
+	log_info("%016"PRIx64" mta connected", s->id);
+
+	mta_filter_begin(s);
+	report_smtp_link_connect("smtp-out", s->id,
+	    s->route->dst->ptrname, 1,
+	    (struct sockaddr_storage *)&s->route->src->sa,
+	    (struct sockaddr_storage *)&s->route->dst->sa);
+}
+
+static void
+mta_disconnected(struct mta_session *s)
+{
+	if (SESSION_FILTERED(s)) {
+		report_smtp_link_disconnect("smtp-out", s->id);
+		mta_filter_end(s);
 	}
 }

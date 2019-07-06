@@ -1154,6 +1154,8 @@ struct dispatcher_remote {
 
 	int	 backup;
 	char	*backupmx;
+
+	char	*filtername;
 };
 
 struct dispatcher_bounce {
