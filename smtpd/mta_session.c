@@ -562,16 +562,19 @@ mta_enter_state(struct mta_session *s, int newstate)
 	case MTA_EHLO:
 		s->ext = 0;
 		mta_send(s, "EHLO %s", s->helo);
+		report_smtp_link_identify("smtp-out", s->id, s->helo);
 		break;
 
 	case MTA_HELO:
 		s->ext = 0;
 		mta_send(s, "HELO %s", s->helo);
+		report_smtp_link_identify("smtp-out", s->id, s->helo);
 		break;
 
 	case MTA_LHLO:
 		s->ext = 0;
 		mta_send(s, "LHLO %s", s->helo);
+		report_smtp_link_identify("smtp-out", s->id, s->helo);
 		break;
 
 	case MTA_STARTTLS:
@@ -939,10 +942,15 @@ mta_response(struct mta_session *s, char *line)
 				delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 			else
 				delivery = IMSG_MTA_DELIVERY_TEMPFAIL;
+
+			report_smtp_tx_mail("smtp-out", s->id, s->task->msgid, s->task->sender,
+			    delivery == IMSG_MTA_DELIVERY_TEMPFAIL ? -1 : 0);
+
 			mta_flush_task(s, delivery, line, 0, 0);
 			mta_enter_state(s, MTA_RSET);
 			return;
 		}
+		report_smtp_tx_mail("smtp-out", s->id, s->task->msgid, s->task->sender, 1);
 		mta_enter_state(s, MTA_RCPT);
 		break;
 
@@ -1017,6 +1025,23 @@ mta_response(struct mta_session *s, char *line)
 			}
 		}
 
+		switch (line[0]) {
+		case '2':
+			report_smtp_tx_rcpt("smtp-out", s->id,
+			    s->task->msgid, e->dest, 1);
+			report_smtp_tx_envelope("smtp-out", s->id,
+			    s->task->msgid, e->id);
+			break;			
+		case '4':
+			report_smtp_tx_rcpt("smtp-out", s->id,
+			    s->task->msgid, e->dest, -1);
+			break;
+		case '5':
+			report_smtp_tx_rcpt("smtp-out", s->id,
+			    s->task->msgid, e->dest, 0);
+			break;
+		}
+
 		if (s->currevp == NULL)
 			mta_enter_state(s, MTA_DATA);
 		else
@@ -1025,6 +1050,7 @@ mta_response(struct mta_session *s, char *line)
 
 	case MTA_DATA:
 		if (line[0] == '2' || line[0] == '3') {
+			report_smtp_tx_data("smtp-out", s->id, s->task->msgid, 1);
 			mta_enter_state(s, MTA_BODY);
 			break;
 		}
@@ -1032,6 +1058,8 @@ mta_response(struct mta_session *s, char *line)
 			delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 		else
 			delivery = IMSG_MTA_DELIVERY_TEMPFAIL;
+		report_smtp_tx_data("smtp-out", s->id, s->task->msgid,
+		    delivery == IMSG_MTA_DELIVERY_TEMPFAIL ? -1 : 0);
 		mta_flush_task(s, delivery, line, 0, 0);
 		mta_enter_state(s, MTA_RSET);
 		break;
