@@ -1145,6 +1145,9 @@ mta_io(struct io *io, int evt, void *arg)
 		    s->id, ssl_to_text(io_tls(s->io)));
 		s->flags |= MTA_TLS;
 
+		report_smtp_link_tls("smtp-out", s->id,
+		    ssl_to_text(io_tls(s->io)));
+
 		mta_cert_verify(s);
 		break;
 
@@ -1267,6 +1270,7 @@ mta_io(struct io *io, int evt, void *arg)
 	case IO_TIMEOUT:
 		log_debug("debug: mta: %p: connection timeout", s);
 		mta_error(s, "Connection timeout");
+		report_smtp_timeout("smtp-out", s->id);
 		if (!s->ready)
 			mta_connect(s);
 		else
