@@ -127,6 +127,7 @@ struct mta_session {
 	struct mta_task		*task;
 	struct mta_envelope	*currevp;
 	FILE			*datafp;
+	size_t			 datalen;
 
 	size_t			 failures;
 
@@ -373,8 +374,10 @@ mta_free(struct mta_session *s)
 
 	if (s->task)
 		fatalx("current task should have been deleted already");
-	if (s->datafp)
+	if (s->datafp) {
 		fclose(s->datafp);
+		s->datalen = 0;
+	}
 	free(s->helo);
 
 	relay = s->relay;
@@ -807,6 +810,7 @@ mta_enter_state(struct mta_session *s, int newstate)
 		if (s->datafp) {
 			fclose(s->datafp);
 			s->datafp = NULL;
+			s->datalen = 0;
 		}
 		mta_send(s, "RSET");
 		break;
@@ -950,6 +954,7 @@ mta_response(struct mta_session *s, char *line)
 			mta_enter_state(s, MTA_RSET);
 			return;
 		}
+		report_smtp_tx_begin("smtp-out", s->id, s->task->msgid);
 		report_smtp_tx_mail("smtp-out", s->id, s->task->msgid, s->task->sender, 1);
 		mta_enter_state(s, MTA_RCPT);
 		break;
@@ -974,6 +979,7 @@ mta_response(struct mta_session *s, char *line)
 				mta_hoststat_reschedule(domain);
 		}
 		else {
+			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
 			if (line[0] == '5')
 				delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 			else
@@ -1054,12 +1060,14 @@ mta_response(struct mta_session *s, char *line)
 			mta_enter_state(s, MTA_BODY);
 			break;
 		}
+
 		if (line[0] == '5')
 			delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 		else
 			delivery = IMSG_MTA_DELIVERY_TEMPFAIL;
 		report_smtp_tx_data("smtp-out", s->id, s->task->msgid,
 		    delivery == IMSG_MTA_DELIVERY_TEMPFAIL ? -1 : 0);
+		report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
 		mta_flush_task(s, delivery, line, 0, 0);
 		mta_enter_state(s, MTA_RSET);
 		break;
@@ -1075,6 +1083,10 @@ mta_response(struct mta_session *s, char *line)
 			delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 		else
 			delivery = IMSG_MTA_DELIVERY_TEMPFAIL;
+		if (delivery != IMSG_MTA_DELIVERY_OK)
+			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
+		else
+			report_smtp_tx_commit("smtp-out", s->id, s->task->msgid, s->datalen);
 		mta_flush_task(s, delivery, line, (s->flags & MTA_LMTP) ? 1 : 0, 0);
 		if (s->task) {
 			s->rcptcount--;
@@ -1096,6 +1108,9 @@ mta_response(struct mta_session *s, char *line)
 
 	case MTA_RSET:
 		s->rcptcount = 0;
+
+		if (s->task)
+			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
 		if (s->relay->limits->sessdelay_transaction) {
 			log_debug("debug: mta: waiting for %llds after reset",
 			    (long long int)s->relay->limits->sessdelay_transaction);
@@ -1368,7 +1383,7 @@ mta_queue_data(struct mta_session *s)
 			break;
 		if (ln[len - 1] == '\n')
 			ln[len - 1] = '\0';
-		io_xprintf(s->io, "%s%s\r\n", *ln == '.' ? "." : "", ln);
+		s->datalen += io_xprintf(s->io, "%s%s\r\n", *ln == '.' ? "." : "", ln);
 	}
 
 	free(ln);
