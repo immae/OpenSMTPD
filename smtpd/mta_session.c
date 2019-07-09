@@ -1727,13 +1727,22 @@ mta_filter_end(struct mta_session *s)
 static void
 mta_connected(struct mta_session *s)
 {
+	struct sockaddr sa_src;
+	struct sockaddr sa_dest;
+	int sa_len;
+
 	log_info("%016"PRIx64" mta connected", s->id);
+
+	if (getsockname(io_fileno(s->io), &sa_src, &sa_len) == -1)
+		bzero(&sa_src, sizeof sa_src);
+	if (getpeername(io_fileno(s->io), &sa_dest, &sa_len) == -1)
+		bzero(&sa_dest, sizeof sa_dest);
 
 	mta_filter_begin(s);
 	report_smtp_link_connect("smtp-out", s->id,
 	    s->route->dst->ptrname, 1,
-	    (struct sockaddr_storage *)&s->route->src->sa,
-	    (struct sockaddr_storage *)&s->route->dst->sa);
+	    (struct sockaddr_storage *)&sa_src,
+	    (struct sockaddr_storage *)&sa_dest);
 }
 
 static void
