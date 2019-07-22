@@ -851,11 +851,11 @@ HELO STRING {
 		yyerror("filter already specified for this dispatcher");
 		YYERROR;
 	}
-	
+
 	do {
 		(void)snprintf(buffer, sizeof buffer, "<dynchain:%08x>", last_dynchain_id++);
 	} while (dict_check(conf->sc_filters_dict, buffer));
-	
+
 	filtername = xstrdup(buffer);
 	filter_config = xcalloc(1, sizeof *filter_config);
 	filter_config->filter_type = FILTER_TYPE_CHAIN;

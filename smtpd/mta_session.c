@@ -360,7 +360,7 @@ mta_free(struct mta_session *s)
 	log_debug("debug: mta: %p: session done", s);
 
 	mta_disconnected(s);
-	
+
 	if (s->ready)
 		s->relay->nconn_ready -= 1;
 
@@ -1037,7 +1037,7 @@ mta_response(struct mta_session *s, char *line)
 			    s->task->msgid, e->dest, 1);
 			report_smtp_tx_envelope("smtp-out", s->id,
 			    s->task->msgid, e->id);
-			break;			
+			break;
 		case '4':
 			report_smtp_tx_rcpt("smtp-out", s->id,
 			    s->task->msgid, e->dest, -1);
@@ -1179,7 +1179,7 @@ mta_io(struct io *io, int evt, void *arg)
 
 		log_trace(TRACE_MTA, "mta: %p: <<< %s", s, line);
 		report_smtp_protocol_server("smtp-out", s->id,line);
-		
+
 		if ((error = parse_smtp_response(line, len, &msg, &cont))) {
 			mta_error(s, "Bad response: %s", error);
 			mta_free(s);
@@ -1360,7 +1360,7 @@ mta_send(struct mta_session *s, char *fmt, ...)
 
 	log_trace(TRACE_MTA, "mta: %p: >>> %s", s, p);
 	report_smtp_protocol_client("smtp-out", s->id, p);
-	
+
 	io_xprintf(s->io, "%s\r\n", p);
 
 	free(p);
