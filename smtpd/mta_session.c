@@ -565,19 +565,19 @@ mta_enter_state(struct mta_session *s, int newstate)
 	case MTA_EHLO:
 		s->ext = 0;
 		mta_send(s, "EHLO %s", s->helo);
-		report_smtp_link_identify("smtp-out", s->id, s->helo);
+		report_smtp_link_identify("smtp-out", s->id, "EHLO", s->helo);
 		break;
 
 	case MTA_HELO:
 		s->ext = 0;
 		mta_send(s, "HELO %s", s->helo);
-		report_smtp_link_identify("smtp-out", s->id, s->helo);
+		report_smtp_link_identify("smtp-out", s->id, "HELO", s->helo);
 		break;
 
 	case MTA_LHLO:
 		s->ext = 0;
 		mta_send(s, "LHLO %s", s->helo);
-		report_smtp_link_identify("smtp-out", s->id, s->helo);
+		report_smtp_link_identify("smtp-out", s->id, "LHLO", s->helo);
 		break;
 
 	case MTA_STARTTLS:
