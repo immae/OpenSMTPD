@@ -509,6 +509,8 @@ mta_connect(struct mta_session *s)
 	else
 		schema = "smtp+notls://";
 
+	mta_filter_begin(s);
+
 	log_info("%016"PRIx64" mta "
 	    "connecting address=%s%s:%d host=%s",
 	    s->id, schema, sa_to_text(s->route->dst->sa),
@@ -1744,7 +1746,6 @@ mta_connected(struct mta_session *s)
 	if (getpeername(io_fileno(s->io), &sa_dest, &sa_len) == -1)
 		bzero(&sa_dest, sizeof sa_dest);
 
-	mta_filter_begin(s);
 	report_smtp_link_connect("smtp-out", s->id,
 	    s->route->dst->ptrname, 1,
 	    (struct sockaddr_storage *)&sa_src,
