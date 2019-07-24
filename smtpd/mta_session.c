@@ -1359,7 +1359,13 @@ mta_send(struct mta_session *s, char *fmt, ...)
 	va_end(ap);
 
 	log_trace(TRACE_MTA, "mta: %p: >>> %s", s, p);
-	report_smtp_protocol_client("smtp-out", s->id, p);
+
+	if (strncasecmp(p, "AUTH PLAIN ", 11) == 0)
+		report_smtp_protocol_client("smtp-out", s->id, "AUTH PLAIN ********");
+	else if (s->state == MTA_AUTH_LOGIN_USER || s->state == MTA_AUTH_LOGIN_PASS)
+		report_smtp_protocol_client("smtp-out", s->id, "********");
+	else
+		report_smtp_protocol_client("smtp-out", s->id, p);
 
 	io_xprintf(s->io, "%s\r\n", p);
 
