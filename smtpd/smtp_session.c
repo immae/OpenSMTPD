@@ -1643,10 +1643,6 @@ smtp_filter_begin(struct smtp_session *s)
 	m_create(p_lka, IMSG_FILTER_SMTP_BEGIN, 0, 0, -1);
 	m_add_id(p_lka, s->id);
 	m_add_string(p_lka, s->listener->filter_name);
-	m_add_sockaddr(p_lka, (struct sockaddr *)&s->ss);
-	m_add_sockaddr(p_lka, (struct sockaddr *)&s->listener->ss);
-	m_add_string(p_lka, s->rdns);
-	m_add_int(p_lka, s->fcrdns);
 	m_close(p_lka);
 }
 

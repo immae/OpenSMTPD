@@ -306,12 +306,7 @@ lka_filter_proc_in_session(uint64_t reqid, const char *proc)
 }
 
 void
-lka_filter_begin(uint64_t reqid,
-    const char *filter_name,
-    const struct sockaddr_storage *ss_src,
-    const struct sockaddr_storage *ss_dest,
-    const char *rdns,
-    int fcrdns)
+lka_filter_begin(uint64_t reqid, const char *filter_name)
 {
 	struct filter_session	*fs;
 
@@ -323,10 +318,6 @@ lka_filter_begin(uint64_t reqid,
 	fs = xcalloc(1, sizeof (struct filter_session));
 	fs->id = reqid;
 	fs->filter_name = xstrdup(filter_name);
-	fs->ss_src = *ss_src;
-	fs->ss_dest = *ss_dest;
-	fs->rdns = xstrdup(rdns);
-	fs->fcrdns = fcrdns;
 	tree_xset(&sessions, fs->id, fs);
 
 	log_trace(TRACE_FILTERS, "%016"PRIx64" filters session-begin", reqid);

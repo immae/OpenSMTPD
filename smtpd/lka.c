@@ -592,13 +592,9 @@ lka_imsg(struct mproc *p, struct imsg *imsg)
 		m_msg(&m, imsg);
 		m_get_id(&m, &reqid);
 		m_get_string(&m, &filter_name);
-		m_get_sockaddr(&m, (struct sockaddr *)&ss_src);
-		m_get_sockaddr(&m, (struct sockaddr *)&ss_dest);
-		m_get_string(&m, &rdns);
-		m_get_int(&m, &fcrdns);
 		m_end(&m);
 
-		lka_filter_begin(reqid, filter_name, &ss_src, &ss_dest, rdns, fcrdns);
+		lka_filter_begin(reqid, filter_name);
 		return;
 
 	case IMSG_FILTER_SMTP_END:

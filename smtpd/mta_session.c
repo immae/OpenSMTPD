@@ -211,6 +211,8 @@ mta_session(struct mta_relay *relay, struct mta_route *route)
 	s->relay = relay;
 	s->route = route;
 
+	mta_filter_begin(s);
+
 	if (relay->flags & RELAY_LMTP)
 		s->flags |= MTA_LMTP;
 	switch (relay->tls) {
@@ -508,8 +510,6 @@ mta_connect(struct mta_session *s)
 		schema = "lmtp://";
 	else
 		schema = "smtp+notls://";
-
-	mta_filter_begin(s);
 
 	log_info("%016"PRIx64" mta "
 	    "connecting address=%s%s:%d host=%s",
@@ -1713,11 +1713,6 @@ mta_filter_begin(struct mta_session *s)
 	m_create(p_lka, IMSG_FILTER_SMTP_BEGIN, 0, 0, -1);
 	m_add_id(p_lka, s->id);
 	m_add_string(p_lka, s->relay->dispatcher->u.remote.filtername);
-	m_add_sockaddr(p_lka, (struct sockaddr *)&s->route->src->sa);
-	m_add_sockaddr(p_lka, (struct sockaddr *)&s->route->dst->sa);
-	/*m_add_string(p_lka, s->rdns);*/
-	m_add_string(p_lka, s->route->dst->ptrname);
-	m_add_int(p_lka, -1);
 	m_close(p_lka);
 }
 
