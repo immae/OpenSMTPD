@@ -1758,8 +1758,6 @@ mta_connected(struct mta_session *s)
 static void
 mta_disconnected(struct mta_session *s)
 {
-	if (SESSION_FILTERED(s)) {
-		report_smtp_link_disconnect("smtp-out", s->id);
-		mta_filter_end(s);
-	}
+	report_smtp_link_disconnect("smtp-out", s->id);
+	mta_filter_end(s);
 }

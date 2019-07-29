@@ -291,7 +291,7 @@ lka_filter_proc_in_session(uint64_t reqid, const char *proc)
 		return 0;
 
 	filter = dict_get(&filters, fs->filter_name);
-	if (filter->proc == NULL && filter->chain == NULL)
+	if (filter == NULL || (filter->proc == NULL && filter->chain == NULL))
 		return 0;
 
 	if (filter->proc)

@@ -205,7 +205,7 @@ lka_report_smtp_link_connect(const char *direction, struct timeval *tv, uint64_t
 		fcrdns_str = "error";
 		break;
 	}
-	
+
 	report_smtp_broadcast(reqid, direction, tv, "link-connect",
 	    "%016"PRIx64"|%s|%s|%s|%s\n",
 	    reqid, rdns, fcrdns_str, src, dest);
