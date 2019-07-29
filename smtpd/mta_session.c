@@ -982,6 +982,7 @@ mta_response(struct mta_session *s, char *line)
 		}
 		else {
 			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
+			report_smtp_tx_reset("smtp-out", s->id, s->task->msgid);
 			if (line[0] == '5')
 				delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 			else
@@ -1070,6 +1071,7 @@ mta_response(struct mta_session *s, char *line)
 		report_smtp_tx_data("smtp-out", s->id, s->task->msgid,
 		    delivery == IMSG_MTA_DELIVERY_TEMPFAIL ? -1 : 0);
 		report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
+		report_smtp_tx_reset("smtp-out", s->id, s->task->msgid);
 		mta_flush_task(s, delivery, line, 0, 0);
 		mta_enter_state(s, MTA_RSET);
 		break;
@@ -1085,10 +1087,14 @@ mta_response(struct mta_session *s, char *line)
 			delivery = IMSG_MTA_DELIVERY_PERMFAIL;
 		else
 			delivery = IMSG_MTA_DELIVERY_TEMPFAIL;
-		if (delivery != IMSG_MTA_DELIVERY_OK)
+		if (delivery != IMSG_MTA_DELIVERY_OK) {
 			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
-		else
+			report_smtp_tx_reset("smtp-out", s->id, s->task->msgid);
+		}
+		else {
 			report_smtp_tx_commit("smtp-out", s->id, s->task->msgid, s->datalen);
+			report_smtp_tx_reset("smtp-out", s->id, s->task->msgid);
+		}
 		mta_flush_task(s, delivery, line, (s->flags & MTA_LMTP) ? 1 : 0, 0);
 		if (s->task) {
 			s->rcptcount--;
@@ -1111,8 +1117,10 @@ mta_response(struct mta_session *s, char *line)
 	case MTA_RSET:
 		s->rcptcount = 0;
 
-		if (s->task)
+		if (s->task) {
 			report_smtp_tx_rollback("smtp-out", s->id, s->task->msgid);
+			report_smtp_tx_reset("smtp-out", s->id, s->task->msgid);
+		}
 		if (s->relay->limits->sessdelay_transaction) {
 			log_debug("debug: mta: waiting for %llds after reset",
 			    (long long int)s->relay->limits->sessdelay_transaction);
