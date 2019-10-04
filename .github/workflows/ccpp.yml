@@ -10,15 +10,13 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: dependencies
-      run: sudo apt install libasr-dev libevent-dev libssl-dev bison wget
-    - name: fetch coverity
-      run: wget https://scan.coverity.com/download/cxx/linux64 && tar -zxvf cov-analysis-linux64-*.tar.gz && export PATH=$PATH:cov-analysis-*/bin
+      run: sudo apt install libasr-dev libevent-dev libssl-dev bison
     - name: boostrap
       run: bash bootstrap
     - name: configure
       run: ./configure
     - name: make
-      run: cov-build --dir cov-int make
+      run: make
     - name: make install
       run: sudo make install
 #    - name: make check
