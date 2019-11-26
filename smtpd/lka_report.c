@@ -111,13 +111,10 @@ lka_report_register_hook(const char *name, const char *hook)
 		subsystem = &smtp_in;
 		hook += 8;
 	}
-#if 0
-	/* No smtp-out event has been implemented yet */
 	else if (strncmp(hook, "smtp-out|", 9) == 0) {
 		subsystem = &smtp_out;
 		hook += 9;
 	}
-#endif
 	else
 		fatalx("Invalid message direction: %s", hook);
 

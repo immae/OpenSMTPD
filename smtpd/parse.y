@@ -887,9 +887,10 @@ HELO STRING {
 	filter_config->filter_type = FILTER_TYPE_CHAIN;
 	dict_init(&filter_config->chain_procs);
 	dispatcher->u.remote.filtername = filtername;
-  } '{' filter_list '}' {
-	dict_set(conf->sc_filters_dict, listen_opts.filtername, filter_config);
+} '{' filter_list '}' {
+	dict_set(conf->sc_filters_dict, dispatcher->u.remote.filtername, filter_config);
 	filter_config = NULL;
+}
 | SRS {
 	if (conf->sc_srs_key == NULL) {
 		yyerror("an srs key is required for srs to be specified in an action");
