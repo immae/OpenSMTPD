@@ -857,16 +857,19 @@ HELO STRING {
 	dispatcher->u.remote.auth = strdup(t->t_name);
 }
 | FILTER STRING {
+	struct filter_config *fc;
+
 	if (dispatcher->u.remote.filtername) {
 		yyerror("filter already specified for this dispatcher");
 		YYERROR;
 	}
 
-	if (dict_get(conf->sc_filters_dict, $2) == NULL) {
+	if ((fc = dict_get(conf->sc_filters_dict, $2)) == NULL) {
 		yyerror("no filter exist with that name: %s", $2);
 		free($2);
 		YYERROR;
 	}
+	fc->filter_subsystem |= FILTER_SUBSYSTEM_SMTP_OUT;
 	dispatcher->u.remote.filtername = $2;
 }
 | FILTER {
@@ -885,6 +888,7 @@ HELO STRING {
 	filtername = xstrdup(buffer);
 	filter_config = xcalloc(1, sizeof *filter_config);
 	filter_config->filter_type = FILTER_TYPE_CHAIN;
+	filter_config->filter_subsystem |= FILTER_SUBSYSTEM_SMTP_OUT;
 	dict_init(&filter_config->chain_procs);
 	dispatcher->u.remote.filtername = filtername;
 } '{' filter_list '}' {
