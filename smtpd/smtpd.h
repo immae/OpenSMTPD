@@ -1039,8 +1039,8 @@ enum filter_type {
 };
 
 enum filter_subsystem {
-	FILTER_SUBSYSTEM_SMTP_IN	= 1,
-	FILTER_SUBSYSTEM_SMTP_OUT	= 2,
+	FILTER_SUBSYSTEM_SMTP_IN	= 1<<0,
+	FILTER_SUBSYSTEM_SMTP_OUT	= 1<<1,
 };
 
 struct filter_proc {
