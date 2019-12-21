@@ -180,9 +180,6 @@ static struct runq *hangon;
 #define	SESSION_FILTERED(s) \
 	((s)->relay->dispatcher->u.remote.filtername)
 
-#define	SESSION_DATA_FILTERED(s) \
-	((s)->relay->dispatcher->u.remote.filtername)
-
 static void
 mta_session_init(void)
 {
