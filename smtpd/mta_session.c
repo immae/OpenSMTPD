@@ -173,11 +173,15 @@ static void mta_disconnected(struct mta_session *);
 static void mta_report_link_connect(struct mta_session *, const char *, int,
     const struct sockaddr_storage *,
     const struct sockaddr_storage *);
+#if 0
 static void mta_report_link_greeting(struct mta_session *, const char *);
+#endif
 static void mta_report_link_identify(struct mta_session *, const char *, const char *);
 static void mta_report_link_tls(struct mta_session *, const char *);
 static void mta_report_link_disconnect(struct mta_session *);
+#if 0
 static void mta_report_link_auth(struct mta_session *, const char *, const char *);
+#endif
 static void mta_report_tx_reset(struct mta_session *, uint32_t);
 static void mta_report_tx_begin(struct mta_session *, uint32_t);
 static void mta_report_tx_mail(struct mta_session *, uint32_t, const char *, int);
@@ -1833,6 +1837,7 @@ mta_report_link_connect(struct mta_session *s, const char *rdns, int fcrdns,
 	report_smtp_link_connect("smtp-out", s->id, rdns, fcrdns, ss_src, ss_dest);
 }
 
+#if 0
 static void
 mta_report_link_greeting(struct mta_session *s,
     const char *domain)
@@ -1842,6 +1847,7 @@ mta_report_link_greeting(struct mta_session *s,
 
 	report_smtp_link_greeting("smtp-out", s->id, domain);
 }
+#endif
 
 static void
 mta_report_link_identify(struct mta_session *s, const char *method, const char *identity)
@@ -1870,6 +1876,7 @@ mta_report_link_disconnect(struct mta_session *s)
 	report_smtp_link_disconnect("smtp-out", s->id);
 }
 
+#if 0
 static void
 mta_report_link_auth(struct mta_session *s, const char *user, const char *result)
 {
@@ -1878,6 +1885,7 @@ mta_report_link_auth(struct mta_session *s, const char *user, const char *result
 
 	report_smtp_link_auth("smtp-out", s->id, user, result);
 }
+#endif
 
 static void
 mta_report_tx_reset(struct mta_session *s, uint32_t msgid)
