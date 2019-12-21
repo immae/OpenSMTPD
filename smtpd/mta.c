@@ -1,4 +1,4 @@
-/*	$OpenBSD: mta.c,v 1.233 2019/12/18 07:57:51 gilles Exp $	*/
+/*	$OpenBSD: mta.c,v 1.234 2019/12/21 10:34:07 gilles Exp $	*/
 
 /*
  * Copyright (c) 2008 Pierre-Yves Ritschard <pyr@openbsd.org>
@@ -1769,6 +1769,7 @@ mta_relay(struct envelope *e, struct relayhost *relayh)
 		TAILQ_INIT(&r->tasks);
 		r->dispatcher = dispatcher;
 		r->id = generate_uid();
+		r->dispatcher = dispatcher;
 		r->tls = key.tls;
 		r->flags = key.flags;
 		r->domain = key.domain;
