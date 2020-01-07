@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <siphash.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -337,6 +338,17 @@ m_add(struct mproc *p, const void *data, size_t len)
 void
 m_close(struct mproc *p)
 {
+	SIPHASH_CTX ctx;
+	SIPHASH_KEY nonce;
+	uint64_t cookie;
+
+	arc4random_buf(&nonce, sizeof nonce);
+	SipHash24_Init(&ctx, &nonce);
+	SipHash24_Update(&ctx, p->m_buf, p->m_pos);
+	cookie = SipHash24_End(&ctx);
+	m_add(p, &nonce, sizeof nonce);
+	m_add(p, &cookie, sizeof cookie);
+
 	if (imsg_compose(&p->imsgbuf, p->m_type, p->m_peerid, p->m_pid, p->m_fd,
 	    p->m_buf, p->m_pos) == -1)
 		fatal("imsg_compose");
@@ -386,9 +398,27 @@ m_error(const char *error)
 void
 m_msg(struct msg *m, struct imsg *imsg)
 {
+	SIPHASH_CTX ctx;
+	SIPHASH_KEY nonce;
+	uint64_t cookie;
+
 	current = imsg;
 	m->pos = imsg->data;
 	m->end = m->pos + (imsg->hdr.len - sizeof(imsg->hdr));
+	if (m->pos + sizeof cookie + sizeof nonce > m->end)
+		m_error("invalid msg signature");
+
+	m->end -= sizeof cookie;
+	memmove(&cookie, m->end, sizeof cookie);
+
+	m->end -= sizeof nonce;
+	memmove(&nonce, m->end, sizeof nonce);
+
+	SipHash24_Init(&ctx, &nonce);
+	SipHash24_Update(&ctx, m->pos, m->end - m->pos);
+
+	if (cookie != SipHash24_End(&ctx))
+		m_error("invalid msg signature");
 }
 
 void
